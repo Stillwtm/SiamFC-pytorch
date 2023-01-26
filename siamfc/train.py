@@ -11,7 +11,7 @@ from .transforms import TransformsSiamFC
 from .dataset import Pair
 from .config import cfg
 
-def train_siamfc(seqs):
+def train_siamfc(seqs, net_path=None):
     cuda = torch.cuda.is_available()
     device = torch.device('cuda:0' if cuda else 'cpu')
 
@@ -25,6 +25,7 @@ def train_siamfc(seqs):
         pin_memory=cuda,
         drop_last=True
     )
+
     # 模型
     net = NetSiamFC(cfg.score_scale).to(device)
     # 优化器设置
@@ -39,8 +40,18 @@ def train_siamfc(seqs):
         optimizer,
         np.power(cfg.end_lr / cfg.beg_lr, 1. / cfg.epoch_num)
     )
+    # 是否从checkpoint开始训练
+    start_epoch = 0
+    if net_path is not None:
+        checkpoint = torch.load(net_path)
+        if 'epoch' in checkpoint:
+            start_epoch = checkpoint['epoch']
+            net.load_state_dict(checkpoint['model'])
+            optimizer.load_state_dict(checkpoint['optimizer'])
+
     # 最后的score_map大小固定，所以只需生成一次label
     labels, weight = _create_label_weight((cfg.score_size, cfg.score_size), device)
+
     # 训练过程记录
     if not os.path.exists(cfg.model_save_dir):
         os.mkdir(cfg.model_save_dir)
@@ -49,7 +60,8 @@ def train_siamfc(seqs):
     writer = SummaryWriter(log_dir=cfg.log_dir)
     
     # 训练过程
-    for epoch in range(cfg.epoch_num):
+    net.train()
+    for epoch in range(start_epoch, cfg.epoch_num):
         print(f"EPOCH {epoch + 1}...")
         for i, batch in enumerate(tqdm(data_loader)):
             z = batch[0].to(device, non_blocking=True)
@@ -66,10 +78,13 @@ def train_siamfc(seqs):
             writer.add_scalar("training_loss",
                 loss.item(), epoch * len(data_loader) + i)
         
-        torch.save(net.state_dict(),
+        torch.save({
+            'epoch': epoch,
+            'model': net.state_dict(),
+            'optimizer': optimizer.state_dict()},
             os.path.join(cfg.model_save_dir, f"SiamFC_{epoch+1}.pth"))
         # 更新学习率
-        lr_scheduler.step(epoch)
+        lr_scheduler.step()
 
 def _create_label_weight(size, device):
     h, w = size

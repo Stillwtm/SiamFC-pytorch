@@ -1,21 +1,23 @@
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
 import cv2
+from got10k.trackers import Tracker
 from .net import NetSiamFC
 from .transforms import crop_resize_box, crop_resize_center, to_tensor
 from .config import cfg
 
-class TrackerSiamFC(object):
+class TrackerSiamFC(Tracker):
     def __init__(self, model_path):
-        super(TrackerSiamFC, self).__init__()
+        super(TrackerSiamFC, self).__init__('SiamFC', True)
 
         self.cuda = torch.cuda.is_available()
         self.device = torch.device('cuda:0' if self.cuda else 'cpu')
 
-        self.net = NetSiamFC(score_scale=1.0)
-        self.net.load_state_dict(torch.load(model_path))
+        self.net = NetSiamFC(score_scale=1.0)  # 推理时不需要再缩放
+        model_dict = torch.load(model_path)
+        if 'model' in model_dict:
+            model_dict = model_dict['model']
+        self.net.load_state_dict(model_dict)
         self.net = self.net.to(self.device)
         self.net.eval()
 

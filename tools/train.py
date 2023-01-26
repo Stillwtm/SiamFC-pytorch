@@ -1,5 +1,6 @@
 import os.path
-from siamfc import train_siamfc, GOT10k
+from siamfc import train_siamfc
+from got10k.datasets import GOT10k
 
 def all_seed(seed=1):
     import torch
