@@ -19,7 +19,7 @@ def all_seed(seed=1):
 if __name__ == '__main__':
     all_seed(seed=3407)
 
-    root_dir = os.path.abspath('/media/snorlax/My Passport/datasets/GOT10k/')
+    root_dir = "/media/snorlax/My Passport/datasets/GOT10k/"
     seqs = GOT10k(root_dir, subset='train', return_meta=True)
 
     train_siamfc(seqs)
