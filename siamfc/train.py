@@ -48,9 +48,10 @@ def train_siamfc(seqs, net_path=None):
             start_epoch = checkpoint['epoch']
             net.load_state_dict(checkpoint['model'])
             optimizer.load_state_dict(checkpoint['optimizer'])
+            lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
 
-    # 最后的score_map大小固定，所以只需生成一次label
-    labels, weight = _create_label_weight((cfg.score_size, cfg.score_size), device)
+    # 最后的score_map大小固定，所以只需生成一次label,注意训练图像是256x256
+    labels, weight = _create_label_weight((15, 15), device)
 
     # 训练过程记录
     if not os.path.exists(cfg.model_save_dir):
@@ -81,7 +82,8 @@ def train_siamfc(seqs, net_path=None):
         torch.save({
             'epoch': epoch,
             'model': net.state_dict(),
-            'optimizer': optimizer.state_dict()},
+            'optimizer': optimizer.state_dict(),
+            'lr_scheduler': lr_scheduler.state_dict()},
             os.path.join(cfg.model_save_dir, f"SiamFC_{epoch+1}.pth"))
         # 更新学习率
         lr_scheduler.step()

@@ -5,8 +5,8 @@ import numpy as np
 np.set_printoptions(threshold=np.inf)
 
 if __name__ == '__main__':
-    net_path = "/home/snorlax/Projects/SiamFC-pytorch/siamfc_alexnet_e50.pth"
-    # net_path = "/home/snorlax/Projects/SiamFC-pytorch/models/SiamFC_100.pth"
+    # net_path = "/home/snorlax/Projects/SiamFC-pytorch/siamfc_alexnet_e50.pth"
+    net_path = "/home/snorlax/Projects/SiamFC-pytorch/models/SiamFC_100.pth"
     data_dir = "/home/snorlax/datasets/track/OTB100"
 
     track = TrackerSiamFC(net_path)

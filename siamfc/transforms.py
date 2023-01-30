@@ -2,7 +2,7 @@ import cv2
 import torch
 import numpy as np
 
-def crop_resize_box(img, box, context, exemplar_sz, out_sz):
+def crop_resize_box(img, box, context, exemplar_sz, out_sz, max_translate=0):
     """以box为中心进行crop并resize,用平均值填充
 
     Args:
@@ -13,6 +13,9 @@ def crop_resize_box(img, box, context, exemplar_sz, out_sz):
         z_sz: exemplar在原图中对应的大小 
     """
     cx, cy = box[:2] + box[2:] / 2
+    if max_translate > 0:
+        cx += np.random.randint(-max_translate, max_translate+1)
+        cy += np.random.randint(-max_translate, max_translate+1)
     w, h = box[2:]
     nw, nh = context * (w + h) + box[2:]
     z_sz = np.sqrt(nw * nh)
@@ -26,15 +29,18 @@ def crop_resize_center(img, center, size, out_size):
 
     Args:
         center: (x, y)
+        size: (w, h)
         out_size: (w, h)
     Returns:
         new_img: 裁切缩放后的图片
     """
     cx, cy = center
     w, h = size
+    img_h = img.shape[0]
+    img_w = img.shape[1]
     # padding
-    pad = int(max(-1, (w - 1) / 2 - cx, (w - 1) / 2 + cx - img.shape[1],
-        (h - 1) / 2 - cy, (h - 1) / 2 + cy - img.shape[0])) + 1
+    pad = int(max(-1, (w - 1) / 2 - cx, (w - 1) / 2 + cx - img_w,
+        (h - 1) / 2 - cy, (h - 1) / 2 + cy - img_h)) + 1
     if pad > 0:
         img = cv2.copyMakeBorder(img, pad, pad, pad, pad, 
             cv2.BORDER_CONSTANT, value=img.mean(axis=(0, 1)))
@@ -61,9 +67,9 @@ class TransformsSiamFC(object):
         z = self._random_stretch(z)
         x = self._random_stretch(x)
         z, _ = crop_resize_box(z, box_z, self.context, 
-            self.exemplar_sz, self.exemplar_sz)
+            self.exemplar_sz, self.exemplar_sz, 4)
         x, _ = crop_resize_box(x, box_x, self.context, 
-            self.exemplar_sz, self.instance_sz)
+            self.exemplar_sz, self.instance_sz - 2 * 8, 4)  # 这里-2*8也许可以减少一些负样本
         z = to_tensor(z)
         x = to_tensor(x)
         return z, x

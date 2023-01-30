@@ -8,9 +8,9 @@ class Config:
     frame_range = 100
     context_amount = 0.5
     # 训练相关参数
-    epoch_num = 50
+    epoch_num = 100
     batch_size = 8
-    num_workers = 8
+    num_workers = 12
     beg_lr = 1e-2
     end_lr = 1e-5
     weight_decay = 5e-4
@@ -23,8 +23,8 @@ class Config:
     # 跟踪相关参数
     upscale_size = 272
     scale_num = 3
-    scale_step = 1.025
-    scale_lr = 0.35
+    scale_step = 1.0375
+    scale_lr = 0.59
     scale_penalty = 0.9745
     window_influence = 0.176
 

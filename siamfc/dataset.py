@@ -17,10 +17,12 @@ class Pair(Dataset):
         """从第index个seq中随机选取一对图片"""
         if self.return_meta:
             img_files, annos, meta = self.seqs[index]
+            vis_ratios = meta.get('cover', None)
         else:
             img_files, annos = self.seqs[index]
+            vis_ratios = None
         
-        indices = self._filter(cv2.imread(img_files[0]), annos)
+        indices = self._filter(cv2.imread(img_files[0]), annos, vis_ratios)
         # 如果这个seq中的图全被筛掉了就换一个seq
         if len(indices) < 2:
             index = np.random.choice(len(self.seqs))
@@ -45,7 +47,7 @@ class Pair(Dataset):
         x_idx = indices[np.random.randint(min_idx, max_idx)]
         return z_idx, x_idx
 
-    def _filter(self, img0, annos):
+    def _filter(self, img0, annos, vis_ratios=None):
         sz = np.array(img0.shape[1::-1])[None, :]  # 整张图片尺寸
         areas = annos[:, 2] * annos[:, 3]  # 标注框面积
         # 筛选规则
@@ -54,5 +56,12 @@ class Pair(Dataset):
         r3 = np.all(annos[:, 2:] / sz <= 0.5, axis=1)  # 标注框的面积在全图中占比合适
         r4 = (annos[:, 2] / (annos[:, 3] + 1e-10) >= 0.25)
         r5 = (annos[:, 2] / (annos[:, 3] + 1e-10) <= 4)  # 长宽比合适
-        mask = np.logical_and.reduce([r1, r2, r3, r4, r5])
+        r6 = np.all(annos[:, 2:] >= 20, axis=1)
+        r7 = np.all(annos[:, 2:] <= 500, axis=1)  # 长宽绝对限制
+        if vis_ratios is not None:  # 由cover.label提供,值为0-8
+            r8 = (vis_ratios > max(1, vis_ratios.max() * 0.3))
+        else:
+            r8 = np.ones_like(r1)
+        
+        mask = np.logical_and.reduce([r1, r2, r3, r4, r5, r6, r7, r8])
         return np.nonzero(mask)[0]
